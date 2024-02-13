@@ -7,7 +7,7 @@ import (
 var Version = &NxVersion{
 	Major: 1,
 	Minor: 9,
-	Patch: 4,
+	Patch: 5,
 }
 
 type NxVersion struct {

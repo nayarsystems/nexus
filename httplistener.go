@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/jaracil/ei"
 	. "github.com/jaracil/nexus/log"
@@ -54,8 +55,7 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 				wsrv.Header = make(map[string][]string)
 			}
 
-			wsrv.Header["Access-Control-Allow-Origin"] = []string{"*"}
-
+			wsrv.Header["Access-Control-Allow-Origin"] = strings.Split(opts.CorsOrigins, ",")
 			wsrv.ServeHTTP(res, req)
 
 		} else {
@@ -68,7 +68,7 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	} else {
 		// HTTP Bridge
 		// CORS pre-flight headers
-		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Origin", opts.CorsOrigins)
 		res.Header().Set("Access-Control-Allow-Methods", "POST, GET")
 		res.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
 
