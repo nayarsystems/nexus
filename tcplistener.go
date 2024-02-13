@@ -94,8 +94,11 @@ func sslListener(u *url.URL, ctx context.Context, proxyed bool) {
 		return
 	}
 
-	tlsConfig := &tls.Config{}
-	tlsConfig.Certificates = []tls.Certificate{cert}
+	tlsConfig := &tls.Config{
+		MinVersion:   tls.VersionTLS12,
+		CipherSuites: safeCypherSuites,
+		Certificates: []tls.Certificate{cert},
+	}
 
 	var listen net.Listener
 

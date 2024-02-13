@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -187,11 +188,27 @@ func httpsListener(u *url.URL, ctx context.Context) {
 		}
 	}()
 
+	Log.Debugln("Loading HTTPS cert/key")
+	cert, err := tls.LoadX509KeyPair(opts.SSL.Cert, opts.SSL.Key)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Errorln("Cannot load HTTPS cert/key")
+		exit("cannot load https cert/key")
+		return
+	}
+
+	tlsConfig := tls.Config{
+		MinVersion:   tls.VersionTLS12,
+		CipherSuites: safeCypherSuites,
+		Certificates: []tls.Certificate{cert},
+	}
+
 	Log.WithFields(logrus.Fields{
 		"address": u.String(),
 	}).Infoln("New HTTPS listener started")
 
-	err := server.ListenAndServeTLS(opts.SSL.Cert, opts.SSL.Key)
+	err = server.ListenAndServeTLSConfig(&tlsConfig)
 	if ctx.Err() != nil {
 		return
 	}
