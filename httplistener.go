@@ -71,7 +71,9 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		// CORS pre-flight headers
 		res.Header().Set("Access-Control-Allow-Origin", opts.CorsOrigins)
 		res.Header().Set("Access-Control-Allow-Methods", "POST, GET")
+		// res.Header().Set("Access-Control-Allow-Credentials", "true")
 		res.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
+		res.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
 
 		switch req.Method {
 		case "POST", "GET":
