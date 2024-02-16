@@ -2,12 +2,15 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 
 	"github.com/jaracil/ei"
 	. "github.com/jaracil/nexus/log"
@@ -54,7 +57,21 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 				wsrv.Header = make(map[string][]string)
 			}
 
-			wsrv.Header["Access-Control-Allow-Origin"] = []string{"*"}
+			if req.TLS != nil {
+				wsrv.Header.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+			}
+
+			origin := res.Header().Get("Origin")
+			for _, corsOrigin := range opts.CorsOrigins {
+				reg := strings.ReplaceAll(fmt.Sprintf("^%s$", corsOrigin), "*", ".*")
+				if match, _ := regexp.MatchString(reg, origin); match {
+					wsrv.Header.Set("Access-Control-Allow-Origin", origin)
+					wsrv.Header.Set("Access-Control-Allow-Methods", "POST, GET")
+					wsrv.Header.Set("Access-Control-Allow-Credentials", "true")
+					wsrv.Header.Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
+					break
+				}
+			}
 
 			wsrv.ServeHTTP(res, req)
 
@@ -68,9 +85,21 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	} else {
 		// HTTP Bridge
 		// CORS pre-flight headers
-		res.Header().Set("Access-Control-Allow-Origin", "*")
-		res.Header().Set("Access-Control-Allow-Methods", "POST, GET")
-		res.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
+		if req.TLS != nil {
+			res.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+		}
+
+		origin := res.Header().Get("Origin")
+		for _, corsOrigin := range opts.CorsOrigins {
+			reg := strings.ReplaceAll(fmt.Sprintf("^%s$", corsOrigin), "*", ".*")
+			if match, _ := regexp.MatchString(reg, origin); match {
+				res.Header().Set("Access-Control-Allow-Origin", origin)
+				res.Header().Set("Access-Control-Allow-Methods", "POST, GET")
+				res.Header().Set("Access-Control-Allow-Credentials", "true")
+				res.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
+				break
+			}
+		}
 
 		switch req.Method {
 		case "POST", "GET":
@@ -187,11 +216,27 @@ func httpsListener(u *url.URL, ctx context.Context) {
 		}
 	}()
 
+	Log.Debugln("Loading HTTPS cert/key")
+	cert, err := tls.LoadX509KeyPair(opts.SSL.Cert, opts.SSL.Key)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Errorln("Cannot load HTTPS cert/key")
+		exit("cannot load https cert/key")
+		return
+	}
+
+	tlsConfig := tls.Config{
+		MinVersion:   tls.VersionTLS12,
+		CipherSuites: safeCypherSuites,
+		Certificates: []tls.Certificate{cert},
+	}
+
 	Log.WithFields(logrus.Fields{
 		"address": u.String(),
 	}).Infoln("New HTTPS listener started")
 
-	err := server.ListenAndServeTLS(opts.SSL.Cert, opts.SSL.Key)
+	err = server.ListenAndServeTLSConfig(&tlsConfig)
 	if ctx.Err() != nil {
 		return
 	}
