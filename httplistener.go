@@ -62,14 +62,21 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			}
 
 			origin := req.Header.Get("Origin")
-			for _, corsOrigin := range opts.CorsOrigins {
-				reg := strings.ReplaceAll(fmt.Sprintf("^%s$", corsOrigin), "*", ".*")
-				if match, _ := regexp.MatchString(reg, origin); match {
-					wsrv.Header.Set("Access-Control-Allow-Origin", origin)
-					wsrv.Header.Set("Access-Control-Allow-Methods", "POST, GET")
-					wsrv.Header.Set("Access-Control-Allow-Credentials", "true")
-					wsrv.Header.Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
-					break
+			if origin != "" { // Check origin in allowed CORS origins
+				var found bool
+				res.Header().Set("Access-Control-Allow-Methods", "POST, GET")
+				res.Header().Set("Access-Control-Allow-Credentials", "true")
+				res.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
+				for _, corsOrigin := range opts.CorsOrigins {
+					reg := strings.ReplaceAll(fmt.Sprintf("^%s$", corsOrigin), "*", ".*")
+					if match, _ := regexp.MatchString(reg, origin); match {
+						wsrv.Header.Set("Access-Control-Allow-Origin", origin)
+						found = true
+						break
+					}
+				}
+				if !found {
+					wsrv.Header.Set("Access-Control-Allow-Origin", "")
 				}
 			}
 
@@ -90,14 +97,21 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		}
 
 		origin := req.Header.Get("Origin")
-		for _, corsOrigin := range opts.CorsOrigins {
-			reg := strings.ReplaceAll(fmt.Sprintf("^%s$", corsOrigin), "*", ".*")
-			if match, _ := regexp.MatchString(reg, origin); match {
-				res.Header().Set("Access-Control-Allow-Origin", origin)
-				res.Header().Set("Access-Control-Allow-Methods", "POST, GET")
-				res.Header().Set("Access-Control-Allow-Credentials", "true")
-				res.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
-				break
+		if origin != "" { // Check origin in allowed CORS origins
+			var found bool
+			res.Header().Set("Access-Control-Allow-Methods", "POST, GET")
+			res.Header().Set("Access-Control-Allow-Credentials", "true")
+			res.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
+			for _, corsOrigin := range opts.CorsOrigins {
+				reg := strings.ReplaceAll(fmt.Sprintf("^%s$", corsOrigin), "*", ".*")
+				if match, _ := regexp.MatchString(reg, origin); match {
+					res.Header().Set("Access-Control-Allow-Origin", origin)
+					found = true
+					break
+				}
+			}
+			if !found {
+				res.Header().Set("Access-Control-Allow-Origin", "")
 			}
 		}
 
