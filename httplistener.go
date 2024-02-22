@@ -61,7 +61,7 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 				wsrv.Header.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
 			}
 
-			origin := res.Header().Get("Origin")
+			origin := req.Header.Get("Origin")
 			for _, corsOrigin := range opts.CorsOrigins {
 				reg := strings.ReplaceAll(fmt.Sprintf("^%s$", corsOrigin), "*", ".*")
 				if match, _ := regexp.MatchString(reg, origin); match {
@@ -89,7 +89,7 @@ func (*httpwsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			res.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
 		}
 
-		origin := res.Header().Get("Origin")
+		origin := req.Header.Get("Origin")
 		for _, corsOrigin := range opts.CorsOrigins {
 			reg := strings.ReplaceAll(fmt.Sprintf("^%s$", corsOrigin), "*", ".*")
 			if match, _ := regexp.MatchString(reg, origin); match {
