@@ -1,12 +1,12 @@
 package main
 
 import (
-	"os"
-
 	"github.com/jessevdk/go-flags"
+	"os"
 )
 
 var opts struct {
+	CorsOrigins    []string       `short:"o" long:"origins"  description:"List of origins to allow origins (http|https)://*.domain.com:port" default:"*"`
 	Listeners      []string       `short:"l" long:"listen"  description:"Listen on (tcp|tcp+proxy|ssl|ssl+proxy|http|https)://addr:port" default:"tcp://0.0.0.0:1717"`
 	Verbose        []bool         `short:"v" long:"verbose" description:"Show debug information. Set multiple times to increase verbosity"`
 	IsProduction   bool           `long:"production" description:"Enables Production mode (JSON output and redacted logs for login requests)"`
